@@ -79,30 +79,30 @@ def generateTable(files, table_name):
     print(f"Time: {e-s}")
 
 win_files = [
-    "white_wins_100000_36075_v2", 
-    "white_wins_200000_72100_v2", 
-    "white_wins_300000_107597_v2", 
-    "white_wins_400000_142914_v2", 
-    "white_wins_500000_175815_v2", 
-    "white_wins_600000_208780_v2",
-    "white_wins_700000_241090_v2",
-    "white_wins_800000_274118_v2",
-    "white_wins_900000_310393_v2"
+    "white_wins_100000_36075", 
+    "white_wins_200000_72100", 
+    "white_wins_300000_107597", 
+    "white_wins_400000_142914", 
+    "white_wins_500000_175815", 
+    "white_wins_600000_208780",
+    "white_wins_700000_241090",
+    "white_wins_800000_274118",
+    "white_wins_900000_310393"
 ]
 
 loss_files = [
-    "white_losses_100000_27424_v2",
-    "white_losses_200000_53717_v2",
-    "white_losses_300000_80471_v2",
-    "white_losses_400000_106489_v2",
-    "white_losses_500000_129629_v2",
-    "white_losses_600000_154782_v2",
-    "white_losses_700000_179102_v2",
-    "white_losses_800000_202932_v2",
-    "white_losses_900000_229840_v2",
-    "white_losses_1000000_257372_v2",
-    "white_losses_1100000_282711_v2",
-    "white_losses_1200000_303819_v2"
+    "white_losses_100000_27424",
+    "white_losses_200000_53717",
+    "white_losses_300000_80471",
+    "white_losses_400000_106489",
+    "white_losses_500000_129629",
+    "white_losses_600000_154782",
+    "white_losses_700000_179102",
+    "white_losses_800000_202932",
+    "white_losses_900000_229840",
+    "white_losses_1000000_257372",
+    "white_losses_1100000_282711",
+    "white_losses_1200000_303819"
 ]
 
 generateTable(win_files, "winTable")

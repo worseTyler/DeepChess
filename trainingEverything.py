@@ -1,5 +1,5 @@
 import tables as tb
-from keras import layers, Model, Input, utils, losses
+from keras import layers, Model, Input, utils, losses, callbacks
 from sklearn.model_selection import train_test_split
 import numpy as np
 import tensorflow as tf
@@ -54,15 +54,16 @@ class Generator(utils.Sequence):
 
 def create_autoencoder(input_size, latent_size, train, validation):
     input = Input(shape=(input_size,))
-    encoded = layers.Dense(latent_size, activation=layers.LeakyReLU(alpha=0.3))(input)
+    encoded = layers.Dense(latent_size, activation="relu")(input)
     # tanh worked SIGNIFICANTLY better than sigmoid
     decoded = layers.Dense(input_size, activation='tanh')(encoded)
 
     autoencoder = Model(input, decoded)
     encoder = Model(input, encoded)
 
+    csv_logger = callbacks.CSVLogger(f'./logs/DBN_{input_size}_{latent_size}.txt', "\n")
     autoencoder.compile(optimizer='adam', loss='mse')
-    autoencoder.fit(train, train, epochs=DBN_EPOCHS, batch_size=DBN_BATCH_SIZE, shuffle=True, validation_data=(validation, validation))
+    autoencoder.fit(train, train, epochs=DBN_EPOCHS, batch_size=DBN_BATCH_SIZE, shuffle=True, validation_data=(validation, validation), callbacks=[csv_logger])
     return encoder
 
 def generate_model(autoencoder_layers, training_data):
@@ -72,12 +73,12 @@ def generate_model(autoencoder_layers, training_data):
     encoder_train = train
     encoder_validation = validation
     for input_size, latent_size in autoencoder_layers:
-        
         encoder = create_autoencoder(input_size, latent_size, encoder_train, encoder_validation)
         encoder.summary()
         encoders.append(encoder)
 
-        # make data have the correct dimensions
+        # transform training data to match the latent space
+        # so that it can be used to train the next encoder
         encoder_train = encoder.predict(encoder_train)
         encoder_validation = encoder.predict(encoder_validation)
 
@@ -100,7 +101,10 @@ def getDeepChessModel(DBN):
     DBN1 = DBN(inputLayer1)
     DBN2 = DBN(inputLayer2)
 
+    # Create Siamese Network through concatenation
     joinedDBN = layers.Concatenate()([DBN1, DBN2])
+
+    # Add dense layers
     layer_400 = layers.Dense(400, activation=layers.LeakyReLU(alpha=0.3))(joinedDBN)
     layer_200 = layers.Dense(200, activation=layers.LeakyReLU(alpha=0.3))(layer_400)
     layer_100 = layers.Dense(100, activation=layers.LeakyReLU(alpha=0.3))(layer_200)
@@ -123,21 +127,47 @@ def load_data(win_amount, loss_amount):
     print(f"Loss Shape: {white_losses.shape}")
     return white_wins, white_losses
 
-start = time.perf_counter()
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
-white_wins, white_losses = load_data((DBN_TRAIN_SIZE+DBN_VALIDATION_SIZE)/2, (DBN_TRAIN_SIZE+DBN_VALIDATION_SIZE)/2)
-
-start_dbn = time.perf_counter()
-training_data = np.append(white_wins, white_losses, axis=0)
-autoencoder_layers = [(773,600), (600,400), (400,200), (200,100)]
-DBN = generate_model(autoencoder_layers, training_data)
-end_dbn = time.perf_counter()
-print(f"Time to train DBN: {end_dbn-start_dbn} seconds")
 
 
-deepChess = getDeepChessModel(DBN)
-white_wins, white_losses = load_data(-1, -1)
-dataGenerator = Generator(white_wins, white_losses, DEEP_CHESS_NUM_BATCHES, DEEP_CHESS_BATCH_SIZE)
-deepChess.fit(dataGenerator, epochs=DEEP_CHESS_EPOCHS)
-deepChess.save("./models/deepChess.h5", save_format="h5")
+if __name__ == "__main__":
+
+    start = time.perf_counter()
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
+    ### Start Training Deep Belief Network
+    start_dbn = time.perf_counter()
+    # Load Data for DBN
+    white_wins, white_losses = load_data((DBN_TRAIN_SIZE+DBN_VALIDATION_SIZE)/2, (DBN_TRAIN_SIZE+DBN_VALIDATION_SIZE)/2)
+    
+    # Put wins and losses into single collection of data
+    training_data = np.append(white_wins, white_losses, axis=0)
+    
+    # Define input size and latent size for autoencoder layers
+    autoencoder_layers = [(773,600), (600,400), (400,200), (200,100)]
+    
+    # Generate and train deep belief network
+    DBN = generate_model(autoencoder_layers, training_data)
+    
+    end_dbn = time.perf_counter()
+    print(f"Time to train DBN: {end_dbn-start_dbn} seconds")
+    ### End Training Deep Belief Network
+
+    ### Start Training Deep Chess
+    # Generate model structure
+    deepChess = getDeepChessModel(DBN)
+    
+    # Get training data
+    white_wins, white_losses = load_data(-1, -1)
+
+    # Define data generator and callback to write logs to file
+    dataGenerator = Generator(white_wins, white_losses, DEEP_CHESS_NUM_BATCHES, DEEP_CHESS_BATCH_SIZE)
+    csv_logger = callbacks.CSVLogger(f'./logs/deepChess.txt', "\n")
+
+    # Train the model
+    deepChess.fit(dataGenerator, epochs=DEEP_CHESS_EPOCHS, callbacks=[csv_logger])
+
+    deepChess.save("./models/deepChess.h5", save_format="h5")
+    end = time.perf_counter()
+    ### End Training Deep Chess
+
+    print(f"Total time to train everything: {end - start} seconds")
