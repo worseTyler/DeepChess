@@ -1,25 +1,22 @@
-from keras import models, layers, Model, Input, losses
+from keras import models, layers, Model, Input, losses, utils
 import numpy as np
 import random
 
 
 def setup_data():
-    bit_strings = np.load("./data/bit_strings_2.npy")
-    labels = np.load("./data/labels_2.npy")
-    white_win_indices = np.where(labels == 1)[0]
-    black_win_indices = np.where(labels == 0)[0]
-
-    white_wins = bit_strings[white_win_indices]
-    black_wins = bit_strings[black_win_indices]
+    white_wins = np.load("./data/white_wins.npy")
+    white_losses = np.load("./data/white_losses.npy")
     
-    print(bit_strings.shape)
-    print(white_wins.shape)
-    print(black_wins.shape)
+    np.random.shuffle(white_wins)
+    np.random.shuffle(white_losses)
 
-    return white_wins, black_wins
+    print(white_wins.shape)
+    print(white_losses.shape)
+
+    return white_wins, white_losses
 
 def getDeepChessModel():
-    DBN = models.load_model('./models/deepBeliefNetwork_relu_tanh')
+    DBN = models.load_model('./models/deepBeliefNetwork_new_try')
     # DBN.compile(optimizer='adam', loss='mse')
     # DBN.summary()
 
@@ -29,9 +26,9 @@ def getDeepChessModel():
     DBN2 = DBN(inputLayer2)
 
     joinedDBN = layers.Concatenate()([DBN1, DBN2])
-    layer_400 = layers.Dense(400, activation="relu")(joinedDBN)
-    layer_200 = layers.Dense(200, activation="relu")(layer_400)
-    layer_100 = layers.Dense(100, activation="relu")(layer_200)
+    layer_400 = layers.Dense(400, activation=layers.LeakyReLU(alpha=0.3))(joinedDBN)
+    layer_200 = layers.Dense(200, activation=layers.LeakyReLU(alpha=0.3))(layer_400)
+    layer_100 = layers.Dense(100, activation=layers.LeakyReLU(alpha=0.3))(layer_200)
     output = layers.Dense(2, activation="softmax")(layer_100)
 
     deepChess = Model(inputs=[inputLayer1, inputLayer2], outputs=output)
@@ -41,33 +38,48 @@ def getDeepChessModel():
 
     return deepChess
 
-white_wins, white_loses = setup_data()
+white_wins, white_losses = setup_data()
 
-def get_data(size):
-    trainOne = []
-    trainTwo = []
-    label = []
-    for i in range(size):
-        white_win = random.choice(white_wins)
-        white_loss = random.choice(white_loses)
-        num = random.randint(0,1)
-        if num == 0:
-            trainOne.append(white_win)
-            trainTwo.append(white_loss)
-            label.append(np.array([1,0]))
-        else: 
-            trainOne.append(white_loss)
-            trainTwo.append(white_win)
-            label.append(np.array([0,1]))
+class Generator(utils.Sequence):
+    # https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
+    # This allows for me to change the training data combinations after every epoch
+    
+    def __init__(self, white_wins, white_losses, num_batches, batch_size):
+        self.white_wins = white_wins
+        self.white_losses = white_losses
+        self.batch_size = batch_size
+        self.num_batches = num_batches
 
-    trainOne = np.array(trainOne)
-    trainTwo = np.array(trainTwo)
-    label = np.array(label)
-    return trainOne, trainTwo, label
+    def __getitem__(self, index):
+        # Generates one batch of data
+        trainOne = []
+        trainTwo = []
+        label = []
+        for i in range(self.batch_size):
+            white_win = random.choice(self.white_wins)
+            white_loss = random.choice(self.white_losses)
+            num = random.randint(0,1)
+            if num == 0:
+                trainOne.append(white_win)
+                trainTwo.append(white_loss)
+                label.append(np.array([1,0]))
+            else: 
+                trainOne.append(white_loss)
+                trainTwo.append(white_win)
+                label.append(np.array([0,1]))
 
-trainOne, trainTwo, label = get_data(1000000)
-valOne, valTwo, labelVal = get_data(500000)
+        trainOne = np.array(trainOne)
+        trainTwo = np.array(trainTwo)
+        label = np.array(label)
+        return [trainOne, trainTwo], label
+
+    def __len__(self):
+        # Number of Batches Per Epoch
+        return self.num_batches
+
+dataGenerator = Generator(white_wins, white_losses, 20, 50000)
 
 model = getDeepChessModel()
-model.fit([trainOne, trainTwo], label, epochs=40, batch_size=50000, validation_data=([valOne, valTwo], labelVal))
-model.save("./models/deepChess")
+model.fit(dataGenerator, epochs=30)
+# validation_data=([valOne, valTwo], labelVal)
+model.save("./models/deepChess_new_data", save_format="h5")

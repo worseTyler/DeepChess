@@ -5,16 +5,21 @@ import numpy as np
 import tensorflow as tf
 import time
 
+start = time.perf_counter()
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-bit_strings = np.load("./data/bit_strings.npy")
-# bit_strings = np.load("./data/bit_strings_2.npy")
+white_wins = np.load("./data/white_wins.npy")
+white_losses = np.load("./data/white_losses.npy")
 
+train = np.append(white_wins, white_losses, axis=0)
+print(train.shape)
+print(white_wins.shape)
+print(white_losses.shape)
 
 autoencoder_layers = [773, 600, 400, 200, 100]
 
 def create_autoencoder(input_size, latent_size, train, test):
     input = Input(shape=(input_size,))
-    encoded = layers.Dense(latent_size, activation='relu')(input)
+    encoded = layers.Dense(latent_size, activation=layers.LeakyReLU(alpha=0.3))(input)
     # tanh worked SIGNIFICANTLY better than sigmoid
     decoded = layers.Dense(input_size, activation='tanh')(encoded)
 
@@ -26,7 +31,7 @@ def create_autoencoder(input_size, latent_size, train, test):
     return encoder
 
 
-train, test = train_test_split(bit_strings, train_size=1000000, test_size=100000)
+train, test = train_test_split(train, train_size=1000000, test_size=100000)
 encoder = create_autoencoder(773, 600, train, test)
 encoder.summary()
 
@@ -47,4 +52,6 @@ input = encoder.input
 stacked = Model(input, encoder_4(encoder_3(encoder_2(encoder.output))))
 
 stacked.summary()
-stacked.save("./models/deepBeliefNetwork_relu_tanh")
+stacked.save("./models/deepBeliefNetwork_new_try", save_format="h5")
+end = time.perf_counter()
+print(f"Time: {end-start} seconds")
