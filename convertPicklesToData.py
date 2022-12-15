@@ -78,6 +78,7 @@ def generateTable(files, table_name):
     e = time.perf_counter()
     print(f"Time: {e-s}")
 
+# convert these files to the pickles you created
 win_files = [
     "white_wins_100000_36075", 
     "white_wins_200000_72100", 
