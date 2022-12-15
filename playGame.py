@@ -3,11 +3,11 @@ import chess.pgn
 import numpy as np
 from convert import *
 
-deepChess =  models.load_model('./models/deepChess_possibleDemo.h5')
+deepChess =  models.load_model('./models/bestDeepChess_test.h5')
 
 def get_computer_move(board):
     copy_board = board.copy() 
-    move = miniMax(copy_board, 1, True)
+    move = miniMax(copy_board, 0, False)
     board.push(move)
 
 def getBestMove(board, isMaximizingPlayer):
@@ -42,10 +42,10 @@ def getBestMove(board, isMaximizingPlayer):
     return bestMove
 
 def compareTwoMoves(board, firstMove, secondMove, isMaximizingPlayer):    
-    if firstMove is None:
-        return secondMove
-    if secondMove is None:
-        return firstMove
+    # if firstMove is None:
+    #     return secondMove
+    # if secondMove is None:
+    #     return firstMove
     
     bit_strings = []
     legal_moves = []
@@ -94,12 +94,12 @@ def miniMax(board, depth, isMaximizingPlayer):
 def start_game():
     board = chess.Board()
 
-    board.push_san("e4")
-    board.push_san("e5")
-    board.push_san("Qh5")
-    board.push_san("Nc6")
-    board.push_san("Bc4")
-    board.push_san("Nf6")
+    # board.push_san("e4")
+    # board.push_san("e5")
+    # board.push_san("Qh5")
+    # board.push_san("Nc6")
+    # board.push_san("Bc4")
+    # board.push_san("Nf6")
     # print(board)
     # move = chess.Move(chess.H5,chess.F7)
     # board.push(move)
@@ -108,7 +108,9 @@ def start_game():
     while not board.is_game_over():
         get_computer_move(board)
         print(board)
-        # input("Press enter to continue...")
+        print()
+        input("Press enter to continue...")
+        print()
 
 start_game()
 
