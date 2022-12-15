@@ -1,13 +1,13 @@
-from keras import models, layers, Model, Input, losses
+from keras import models
 import chess.pgn
 import numpy as np
 from convert import *
 
-deepChess =  models.load_model('./models/bestDeepChess_test.h5')
+deepChess =  models.load_model('./models/bestDeepChess.h5')
 
 def get_computer_move(board):
     copy_board = board.copy() 
-    move = miniMax(copy_board, 0, False)
+    move = miniMax(copy_board, 0, True)
     board.push(move)
 
 def getBestMove(board, isMaximizingPlayer):
@@ -91,26 +91,28 @@ def miniMax(board, depth, isMaximizingPlayer):
     
     return bestMove
 
+def get_player_move(board):
+    given_valid_move = False
+    while not given_valid_move:
+        move = input("Enter a move: ")
+        try:
+            board.push_san(move)
+            given_valid_move = True
+        except:
+            continue
+
 def start_game():
     board = chess.Board()
 
-    # board.push_san("e4")
-    # board.push_san("e5")
-    # board.push_san("Qh5")
-    # board.push_san("Nc6")
-    # board.push_san("Bc4")
-    # board.push_san("Nf6")
-    # print(board)
-    # move = chess.Move(chess.H5,chess.F7)
-    # board.push(move)
-    # print(board.is_capture(move))
-    # print(board.is_game_over())
+    move_counter = 0
+    print(board)
     while not board.is_game_over():
-        get_computer_move(board)
+        if move_counter % 2 == 0:
+            get_player_move(board)
+        else:
+            get_computer_move(board)
         print(board)
-        print()
-        input("Press enter to continue...")
-        print()
+        move_counter += 1
 
 start_game()
 
