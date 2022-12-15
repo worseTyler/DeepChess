@@ -1,4 +1,4 @@
-Implementation of [Deep Chess](https://arxiv.org/pdf/1711.09667.pdf)
+Implementation of [Deep Chess](https://arxiv.org/pdf/1711.09667.pdf) using [this dataset](http://ccrl.chessdom.com/ccrl/4040/games.html)
 
 In the end I wasn't able to get a model that actually played chess well.
 
