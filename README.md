@@ -11,6 +11,9 @@ Pipeline:
 **Can play against my deepChess by running play game as is**
 
 Related Videos:
+
 [Presentation](https://youtu.be/Z2KsW2RBqhU)
+
 [Training Demo](https://youtu.be/jv5CyTSRb5k)
+
 [Playing Demo](https://youtu.be/dtFgmZ37zkA)
